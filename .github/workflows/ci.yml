@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Dependabot auto-merges with GITHUB_TOKEN, which triggers no push run, so main is re-checked weekly and on demand.
+  schedule:
+    - cron: '17 5 * * 2'
   workflow_dispatch:
 permissions: {}
 concurrency:
@@ -20,9 +23,64 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+      - name: No game files in the repository
+        # Only the baked faces and transcribed lines ship: never Guillotine's containers or audio.
+        run: |
+          if git ls-files | grep -iE '\.(dir|cst|cxt|dxr|dcr|aif|aiff|wav|mp3|m4a|ogg|swa)$'; then
+            echo "game files are committed: remove them" >&2
+            exit 1
+          fi
+      - name: Baked faces match the face list
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          spec = set(json.load(open('scripts/faces.json')))
+          src = open('plugin/hooks/data/faces.generated.ts').read()
+          baked = set(json.loads(src[src.index('= ') + 2:]))
+          if spec != baked:
+              sys.exit(f'faces.json and faces.generated.ts differ: run scripts/bake.py. only in faces.json: {sorted(spec - baked)}; only baked: {sorted(baked - spec)}')
+          PY
+      - name: The bake script compiles
+        run: python3 -m py_compile scripts/bake.py
       - name: Plugin ships the same LICENSE and NOTICE as the repository
         run: cmp LICENSE plugin/LICENSE && cmp NOTICE plugin/NOTICE
       - run: npm install -g @anthropic-ai/claude-code@2.1.296
       - run: claude plugin validate --strict plugin
       - run: claude plugin validate --strict .
+      - run: claude plugin test plugin
+      - name: Installed plugin carries no build workspace and stays small
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude-config
+        run: |
+          claude plugin marketplace add "$GITHUB_WORKSPACE"
+          claude plugin install guillotine-buddy@guillotine-buddy
+          cache="$CLAUDE_CONFIG_DIR/plugins/cache/guillotine-buddy/guillotine-buddy"
+          test -f "$cache"/*/hooks/hooks.json
+          if find "$cache" \( -name package.json -o -name node_modules -o -name '*.py' -o -name '.casts' \) | grep .; then
+            echo "the installed plugin contains build files" >&2
+            exit 1
+          fi
+          du -sh "$cache"
+          kb=$(du -sk "$cache" | cut -f1)
+          if [ "$kb" -gt 1024 ]; then
+            echo "the installed plugin is ${kb} KB, over the 1 MB budget" >&2
+            exit 1
+          fi
+
+  check-latest:
+    # Not a required check: an early warning when the newest Claude Code changes the plugin API.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm install -g @anthropic-ai/claude-code@latest
+      - run: claude --version
+      - run: claude plugin validate --strict plugin
       - run: claude plugin test plugin
