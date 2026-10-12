@@ -1,0 +1,97 @@
+import type { EngineInterface } from 'claude-code'
+import type { Language } from '../types'
+import type { Character } from './characters'
+import type { Signal } from './signals'
+
+export type { Language }
+/** What the person asked this turn and how Claude's answer began. */
+export type Conversation = { prompt: string | null; answer: string | null }
+/** What the line reacts to: the conversation, what got done, a catchphrase to work in, and the lines already said. */
+export type Turn = { talk: Conversation; facts: string; phrase: string | null; recent: readonly string[] }
+
+/** How much of the prompt and of the answer the speech model sees. */
+export const EXCERPT_MAX = 300
+export const SPEECH_TIMEOUT_MS = 6000
+/** The longest line the bubble shows. */
+export const LINE_MAX = 120
+/** How often a line is asked to carry one of the character's catchphrases. */
+export const CATCHPHRASE_CHANCE = 0.4
+/** How many of the character's last lines it is told not to repeat. */
+export const RECENT_MAX = 8
+/** Room for a Hebrew line, which takes more tokens than its length suggests; the bubble trims it anyway. */
+const MAX_TOKENS = 160
+
+const GAMES = { 'Piposh': 'פיפוש', 'Piposh 2': 'פיפוש 2', 'Rating': 'רייטינג' } as const
+
+const excerpt = (text: string | null) => (text ?? '').trim().slice(0, EXCERPT_MAX)
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+
+/** What got done this turn, as counts and check names: no paths, no content. Empty for a turn of talk alone. */
+export function turnFacts(signals: readonly Signal[]): string {
+  const parts: string[] = []
+  const count = (k: Signal['kind']) => signals.filter(s => s.kind === k).length
+  if (count('tool')) parts.push(plural(count('tool'), 'tool call'))
+  if (count('commit')) parts.push(plural(count('commit'), 'commit'))
+  if (count('push')) parts.push(plural(count('push'), 'push'))
+  if (count('pr')) parts.push(count('pr') === 1 ? '1 PR opened' : `${count('pr')} PRs opened`)
+  const checks = signals.filter((s): s is Extract<Signal, { kind: 'check' }> => s.kind === 'check')
+  if (checks.length) parts.push('checks: ' + checks.map(c => `${c.key} ${c.ok ? 'passed' : 'failed'}`).join(', '))
+  return parts.join('; ')
+}
+
+/** The catchphrase this line should carry, or null: some lines do, so the phrases keep coming without every line being one. */
+export function catchphrase(c: Character, rand: () => number): string | null {
+  if (c.catchphrases.length === 0 || rand() >= CATCHPHRASE_CHANCE) return null
+  return c.catchphrases[Math.floor(rand() * c.catchphrases.length)]!
+}
+
+export function speechPrompt(c: Character, language: Language, { talk, facts, phrase, recent }: Turn): { system: string; prompt: string } {
+  const tongue = language === 'he'
+    ? 'Speak Hebrew, in the character\'s own slang and rhythm.'
+    : 'Speak English, keeping the character\'s attitude, rhythm and quirks as if dubbed from the Hebrew; a catchphrase stays Hebrew, in Latin letters.'
+  const system = [
+    `You are ${c.name.en} (${c.name.he}) from the Israeli adventure game ${c.game} (${GAMES[c.game]}, Guillotine), living in a developer's terminal as their buddy.`,
+    c.voice && `Your character: ${c.voice}`,
+    c.catchphrases.length > 0 && `Your catchphrases: ${c.catchphrases.join(' / ')}`,
+    c.lines.length > 0 && `Lines you said in the game, for your voice. Match their style; never repeat one word for word:\n${c.lines.map(l => `- ${l}`).join('\n')}`,
+    `Reply with one short line (at most 15 words), in character, reacting to what the developer asked and what got done: gloat at a failed check, show off at a passing one. ${tongue} Never quote secrets or code. No quotes, no emoji, no markdown.`,
+  ].filter(Boolean).join('\n\n')
+  const asked = excerpt(talk.prompt), answered = excerpt(talk.answer)
+  const said = [asked && `The developer asked: ${asked}`, answered && `Claude answered: ${answered}`, facts && `What got done: ${facts}`].filter(Boolean).join('\n') || 'A quiet turn.'
+  const prompt = [
+    said,
+    recent.length > 0 && `You already said these; say something new:\n${recent.map(l => `- ${l}`).join('\n')}`,
+    phrase && `This time, work in your catchphrase "${phrase}".`,
+  ].filter(Boolean).join('\n\n')
+  return { system, prompt }
+}
+
+/** Out-of-character openings: the model refusing or explaining instead of speaking. */
+const REFUSAL = /^(i can['’]?t|i cannot|sorry|as an ai)\b/i
+
+export function cleanReply(text: string): string | null {
+  const first = text.split('\n').map(l => l.trim()).find(l => l.length > 0)
+  if (!first) return null
+  const unquoted = first.replace(/^["'“”״]+|["'“”״]+$/g, '').trim()
+  if (!unquoted || REFUSAL.test(unquoted) || unquoted.endsWith(':')) return null
+  return unquoted.slice(0, LINE_MAX)
+}
+
+/** A short line of the character's own, for when the model does not answer; null when it has none in this language. */
+export function fallback(c: Character, language: Language, rand: () => number): string | null {
+  if (language !== 'he') return null
+  const short = c.lines.filter(l => l.length <= 60)
+  return short.length ? short[Math.floor(rand() * short.length)]! : null
+}
+
+/** The character's line for the turn: the model's, or one of their own when the model does not answer. */
+export async function speak($: { model: Pick<EngineInterface['model'], 'complete'> }, model: string, c: Character, language: Language, turn: Turn): Promise<string | null> {
+  try {
+    const { system, prompt } = speechPrompt(c, language, turn)
+    // The persona and the game lines stay the same all session: cached, each turn sends only the conversation.
+    const r = await $.model.complete({ model, system: [{ text: system, cache: true }], prompt, maxTokens: MAX_TOKENS, timeoutMs: SPEECH_TIMEOUT_MS })
+    const line = r.isAnswered ? cleanReply(r.text) : null
+    if (line) return line
+  } catch {}
+  return fallback(c, language, Math.random)
+}

@@ -1,0 +1,26 @@
+{
+  "name": "guillotine-buddy",
+  "version": "0.1.0",
+  "description": "A character from Guillotine's Piposh and Rating games above your prompt, reacting to your work in their own voice.",
+  "author": { "name": "Yonatan Karp-Rudin", "url": "https://github.com/yonatankarp" },
+  "homepage": "https://github.com/yonatankarp/guillotine-buddy",
+  "repository": "https://github.com/yonatankarp/guillotine-buddy",
+  "license": "MIT",
+  "keywords": ["piposh", "rating", "guillotine", "buddy", "fun"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "language": {
+      "type": "string",
+      "title": "Language",
+      "description": "The language the characters speak: he (Hebrew, as in the games) or en (English, in the same voice).",
+      "options": ["he", "en"],
+      "default": "he"
+    },
+    "speechModel": {
+      "type": "string",
+      "title": "Speech model",
+      "description": "Model alias or id for the character's lines. It sees the first 300 characters of your prompt and of Claude's answer.",
+      "default": "haiku"
+    }
+  }
+}

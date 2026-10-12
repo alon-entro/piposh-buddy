@@ -1,0 +1,19 @@
+{
+  "p1-piposh": {"game": "piposh", "file": "PIPDATA/EGOZI.cst", "face": 58, "patches": [38, 40, 41, 45, 46, 54]},
+  "p1-tzutzik": {"game": "piposh", "file": "PIPDATA/ZUZIK.cst", "face": 47, "patches": [37, 40, 42, 44, 405]},
+  "p1-krupnik": {"game": "piposh", "file": "PIPDATA/CAPTAIN.cst", "face": 40, "patches": [51, 48, 49, 53, 55]},
+  "p1-pustema": {"game": "piposh", "file": "PIPDATA/GYPSY.cst", "face": 80, "talk": [90, 91, 236, 121, 123]},
+  "p1-kolram": {"game": "piposh", "file": "PIPDATA/DOC.cst", "face": 20, "patches": [25, 27, 29, 32]},
+  "p1-yeshurun": {"game": "piposh", "file": "PIPDATA/ISHURUN.cst", "face": 37, "patches": [25, 28, 23, 26, 29]},
+  "p1-orchid": {"game": "piposh", "file": "PIPDATA/ISHURUN.cst", "face": 460, "crop": [0, 0, 100, 106], "layers": [{"member": 476, "x": 0, "y": 0, "ink": 36}, {"member": 461, "x": 17, "y": 58}], "rest": {"member": 469, "x": 21, "y": 63}, "mouths": [{"member": 462, "x": 23, "y": 60}, {"member": 463, "x": 20, "y": 60}, {"member": 464, "x": 20, "y": 63}, {"member": 465, "x": 20, "y": 61}, {"member": 466, "x": 21, "y": 64}, {"member": 467, "x": 22, "y": 64}]},
+  "p1-fritz": {"game": "piposh", "file": "PIPDATA/PSYCOLOG.cst", "face": 28, "talk": [22, 26, 27, 25]},
+  "p1-mr-bentley": {"game": "piposh", "file": "PIPDATA/DARLINGM.cst", "face": 44, "patches": [32, 29, 30, 27, 31]},
+  "p1-mrs-bentley": {"game": "piposh", "file": "PIPDATA/DARLINGF.cst", "face": 48, "patches": [36, 40, 41, 43, 44]},
+  "p2-hatuli": {"game": "piposh2", "file": "PIP2DATA/HATULI.cst", "face": 56, "patches": [46, 40, 43, 37]},
+  "p2-patricia": {"game": "piposh2", "file": "PIP2DATA/FAT.cst", "face": 47, "patches": [54, 57, 59, 60, 61]},
+  "p2-rinati": {"game": "piposh2", "file": "PIP2DATA/RINATI.cst", "face": 35, "patches": [45, 46, 47, 49, 43]},
+  "p2-manager": {"game": "piposh2", "file": "PIP2DATA/MANAGER.cst", "face": 25, "patches": [38, 41, 43, 45, 46]},
+  "r-egoz": {"game": "rating", "file": "Panel.cst", "face": 24, "talk": [28, 29, 23, 25, 27]},
+  "r-manager": {"game": "rating", "file": "MANAGER.cst", "face": 79, "layers": [{"member": 3, "x": 26, "y": 47}], "rest": {"member": 90, "x": 12, "y": 81}, "mouths": [{"member": 8, "x": 30, "y": 87}, {"member": 9, "x": 27, "y": 82}, {"member": 10, "x": 14, "y": 85}, {"member": 11, "x": 21, "y": 84}, {"member": 12, "x": 28, "y": 87}, {"member": 13, "x": 24, "y": 85}]},
+  "r-tzviki": {"game": "rating", "file": "INSULT.dir", "face": 56, "crop": [104, 0, 405, 330], "rest": {"member": 84, "x": 182, "y": 262}, "mouths": [{"member": 58, "x": 179, "y": 252}, {"member": 59, "x": 184, "y": 252}, {"member": 60, "x": 183, "y": 253}, {"member": 61, "x": 182, "y": 259}, {"member": 62, "x": 182, "y": 254}, {"member": 65, "x": 185, "y": 255}]}
+}

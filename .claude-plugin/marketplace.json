@@ -1,0 +1,14 @@
+{
+  "name": "guillotine-buddy",
+  "owner": { "name": "Yonatan Karp-Rudin", "url": "https://github.com/yonatankarp" },
+  "metadata": {
+    "description": "Marketplace for guillotine-buddy: characters from Guillotine's Piposh and Rating games as your Claude Code buddy."
+  },
+  "plugins": [
+    {
+      "name": "guillotine-buddy",
+      "source": "./plugin",
+      "description": "A character from Guillotine's Piposh and Rating games above your prompt, reacting to your work in their own voice."
+    }
+  ]
+}
